@@ -1,0 +1,104 @@
+// Das Array mit den belegten Pins. Die Nullen vorne und hinten sind ein Trick,
+// damit sich das Lauflicht, dass sich über mehrere LEDs erstreckt, komplett
+// aus dem Bild laufen kann.
+ 
+int pinArray[] = {0,0,0,6,7,8,9,10,11,12,13,0,0,0};
+ 
+// Die Anzahl der Elemente im Array. Die Elemente sind dann über die
+//Indizes [0] bis [13] zu erreichen.
+int pinCount = 14;
+ 
+// Der aktive Eintrag des Array, pinArray[2] ist das 3(!) Element. Das wird
+// zum Start gesetzt, die beiden hinterherlaufenden Lichter kriegen dann die 
+// Einträge [1] und [0], also sind zum Start alle // anzusprechenden Pins = 0
+int activePin = 2;
+ 
+// Die Laufrichtung, in der für den nächsten Schritt zum activePin addiert 
+// wird. dx ist +1 (aufwärts im Array) oder -1 (abwärts im Array)
+int dx = 1;
+ 
+// Der vom Potentiometer gelieferte Wert
+int poti = 0;
+ 
+// Mindestverzögerung zwischen zwei Schritten des Lauflichts. 
+// Mit z.B. mintime=20 kann man die maximale Geschwindigkeit begrenzen.
+int mintime = 0;
+ 
+// setup() wird einmal bei Programmstart ausgeführt
+void setup() {
+  // Serielle Übertragung starten
+  Serial.begin(9600);
+  // Durch das Array gehen, alle Pins auf OUTPUT setzen außer es kommt 0.
+  for (int i=0; i< pinCount; i++) {
+    if (pinArray[i] != 0) {
+      pinMode(pinArray[i], OUTPUT);
+    }
+  }
+}
+ 
+// loop() wird während des Programmablaufs endlos immer wieder aufgerufen
+void loop() {
+ 
+  // Zuerst schalten wir alle Pins of Array auf LOW, als Hilfsfunktion
+  // verwenden wir digitalWriteNot0(), damit die Array-Einträge mit 
+  // Wert 0 ignoriert werden.
+  for (int i=0; i<pinCount; i++) {
+    digitalWriteNot0(pinArray[i], LOW);
+  }
+ 
+  // Sind wir am Ende des Arrays angekommen? Wenn ja, dann einen Schritt 
+  // zurückgehen (zum vorletzten 0-Element) und mit dx = -1 die Laufrichtung#
+  // ändern.
+  if (activePin == (pinCount-1)) {
+    activePin = (pinCount - 2);
+    dx = -1;
+  }
+ 
+  // Sind wir am Anfang des Arrays angekommen? Wenn ja, dann einen Schritt 
+  // weitergehen (zum 2. 0-Element) und mit dx = 1 die Laufrichtung aufwärts setzen.
+  if (activePin == 0) {
+    activePin = 1;
+    dx = 1;
+  }
+ 
+  // Zum aktiven Pin die Laufrichtung hinzuzählen. An den Rändern des Array mit
+  // den 3 Nullen sind wir damit mindestens 2 Elemente vom Rand entfernt, haben 
+  // also Platz um 2 weitere LEDs leuchten zu lassen
+  activePin += dx;
+ 
+  // Potentiometer von Pin 0 einlesen (Wert zwischen 0 und 1023)
+  poti = analogRead(0);
+ 
+  // Wenn der Wert < 1023 ist, dann...
+  if (poti < 1023) {
+    // Die LED auf activePin einschalten
+    digitalWriteNot0(pinArray[activePin], HIGH);
+    // und die LED in entgegengesetzter Laufrichtung davor
+    digitalWriteNot0(pinArray[activePin-dx], HIGH);
+    // und eine weitere LED in entgegengesetzter Laufrichtung davor
+    digitalWriteNot0(pinArray[activePin-2*dx], HIGH);
+    // Das funktoniert, weil wir durch die 3 Nullen an den Rändern des Arrays genug
+    // Platz haben, um im Array zu lesen, ohnen die Arraygrenzen zu sprengen. Wenn 
+    // als Pin eine 0 drinsteht, wird dieses beim Schalten der LEDs einfach ignoriert.
+  }
+ 
+  // Debug-Ausgabe für den Seriellen Monitor. Einfach über "Tools" einschalten
+  Serial.print(poti);
+  Serial.print(" - ");
+  Serial.println(activePin);
+ 
+  // Den geviertelten Wert des Potentiometers verwenden wir für die Wartezeit 
+  // zwischen den Schritten in Millisekunden mintime kann als Mindestwert gesetzt 
+  // werden, damit wird die maximale Geschwindigkeit des Lauflichts begrenzt.
+  delay(mintime+analogRead(0)/4);
+ 
+}
+ 
+// digitalWriteNot0() ist eine Hilfsfunktion, die nur dann digitalWrite() ausführt,
+// wenn das übergebene Pin nicht 0 ist. Damit werden die Füllelemente des pinArray
+// bei der Ausgabe einfach ignoriert.
+void digitalWriteNot0(int pin, boolean state) {
+  if (pin > 0) {
+    digitalWrite(pin, state);
+  }
+}
