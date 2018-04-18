@@ -1,0 +1,45 @@
+ /*Contrôle à distance via Bluetooth
+ *Created by gaurav biswas
+ * 4GI,ENSP gaurav bhai
+*/
+#include <SoftwareSerial.h>
+ //const int relayPin =3; //Spécifie la broche signal du relai
+ int serialValue;  //Contient la valeur reçu par le module Bluetooth
+ 
+ const int txPin=10;
+ const int rxPin=11;
+ const int relayPin=7;
+
+ SoftwareSerial BT(txPin,rxPin); //Cree un objet bluetooth avec les pins de transmission et reception indiqués
+
+void setup() {
+ 
+  
+ //digitalWrite(relayPin,LOW);  
+  
+  pinMode(relayPin,OUTPUT);
+  digitalWrite(relayPin,LOW); 
+  BT.begin(9600); //Specifie la vitesse de reception et transmission de l'information 
+ 
+
+}
+  
+void loop() {
+  Serial.begin(9600);
+  if(BT.available()){ //Si il existe une information serial reçu, on le lit    
+    serialValue=BT.read();
+    Serial.println(serialValue); 
+    
+  }     
+  switch (serialValue) {//UP:67 DOWN:68 LEFT:66 RIGHT:65 MID:69
+      case 69:
+        digitalWrite(relayPin,HIGH);
+        break;
+      case 65:
+        digitalWrite(relayPin,LOW);
+        break;      
+  }
+ 
+   delay(100);//This delay is very important! Do not remove;Helps return good serial values!!!
+    
+}
